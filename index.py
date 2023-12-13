@@ -35,7 +35,15 @@ def ask_background_color():
     backgroundColor = pick_color.get() # get the color string
     if backgroundColor != None:
         buttonBackgroundColor.configure(fg_color=backgroundColor)    
-    
+        
+def estructuraContenido():
+    if not os.path.exists("fotogramas"):
+        os.makedirs("fotogramas")
+    if not os.path.exists("ASCII"):
+        os.makedirs("ASCII")
+    if not os.path.exists("fotogramasASCII"):
+        os.makedirs("fotogramasASCII")
+        
 def borrarContenido():
     #borra el contenido de las carpetas fotogramas y ascii
     dir = 'fotogramas'
@@ -49,7 +57,7 @@ def borrarContenido():
         os.remove(file.path)
     
 #-------------------------------------------------------------------------- 
- 
+
 def selectVideo():
     global video_path
     video_path = filedialog.askopenfilename()
@@ -263,8 +271,9 @@ def crear_video():
 
 
 
-def init():
+def app():
       try:
+            estructuraContenido()
             #print("Starting in ",timeSleep," seconds")
             thread1 = threading.Thread(target=crear_video)
             thread1.start()
@@ -282,10 +291,8 @@ app.configure(bg="#red")
 app.resizable(width = False, height = False)
 app.title("ASCIIVIDEO")
 
-# Use CTkButton instead of tkinter Button
-buttonExport = customtkinter.CTkButton(master=app, text="Export",text_color="black", command=init,  font=('System', 16, "bold"), corner_radius=0)
+buttonExport = customtkinter.CTkButton(master=app, text="Export",text_color="black", command=app,  font=('System', 16, "bold"), corner_radius=0)
 buttonExport.place(x=10, y=360)
-
 
 buttonSelectVideo = customtkinter.CTkButton(master=app, text="Load video",text_color="black", command=selectVideo,  font=('System', 16, "bold"),corner_radius=0)
 buttonSelectVideo.place(x=10, y=280)
