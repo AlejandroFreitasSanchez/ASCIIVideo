@@ -5,10 +5,37 @@ from alive_progress import alive_bar
 import threading
 import customtkinter
 from customtkinter import filedialog
+from CTkColorPicker import *
 
+
+
+text = """
+    _   ___  ___ ___ ___  __   _____ ___  ___ ___  
+   /_\ / __|/ __|_ _|_ _| \ \ / /_ _|   \| __/ _ \ 
+  / _ \\__ \ (__ | | | |   \ V / | || |) | _| (_) |
+ /_/ \_\___/\___|___|___|   \_/ |___|___/|___\___/ 
+                                                   
+"""                                                                                      
+print(text)
 carpeta_destino_video = ""
 video_path = ""
+fontColor = "Black"
+backgroundColor = "White"
 
+def ask_font_color():
+    global fontColor
+    pick_color = AskColor() # open the color picker
+    fontColor = pick_color.get() # get the color string
+    if fontColor != None:
+        buttonFontColor.configure(fg_color=fontColor)
+    
+def ask_background_color():
+    global backgroundColor
+    pick_color = AskColor() # open the color picker
+    backgroundColor = pick_color.get() # get the color string
+    if backgroundColor != None:
+        buttonBackgroundColor.configure(fg_color=backgroundColor)    
+    
 def borrarContenido():
     #borra el contenido de las carpetas fotogramas y ascii
     dir = 'fotogramas'
@@ -26,17 +53,19 @@ def borrarContenido():
 def selectVideo():
     global video_path
     video_path = filedialog.askopenfilename()
-    label.configure(text = video_path, text_color="green" )
+    label.configure(text = video_path, text_color="#a3be8c" )
     
     
 def selectFolder():
     global carpeta_destino_video
     carpeta_destino_video = filedialog.askdirectory()
-    label2.configure(text = carpeta_destino_video, text_color="green" ) 
+    label2.configure(text = carpeta_destino_video, text_color="#a3be8c" ) 
     
 #--------------------------------------------------------------------------
 
 def crear_imagen_desde_txt(txt_path, imageName):
+    
+    
     with open(txt_path, "r") as archivo_txt:
         lineas = archivo_txt.readlines()
 
@@ -48,7 +77,7 @@ def crear_imagen_desde_txt(txt_path, imageName):
     tamano_caracter = 10
 
     # Crear una nueva imagen RGB
-    nueva_imagen = img.new("RGB", (ancho * tamano_caracter, alto * tamano_caracter), "white")
+    nueva_imagen = img.new("RGB", (ancho * tamano_caracter, alto * tamano_caracter), backgroundColor)
     draw = ImageDraw.Draw(nueva_imagen)
 
     # Utilizar una fuente mono-espaciada para que los caracteres se alineen correctamente
@@ -58,7 +87,7 @@ def crear_imagen_desde_txt(txt_path, imageName):
     for y, linea in enumerate(lineas):
         for x, caracter in enumerate(linea.strip()):
             posicion = (x * tamano_caracter, y * tamano_caracter)
-            draw.text(posicion, caracter, font=fuente, fill="black")
+            draw.text(posicion, caracter, font=fuente, fill=fontColor)
 
     # Guardar la imagen
     nueva_imagen.save(imageName)
@@ -80,7 +109,7 @@ def convertir_a_ascii(imagen_path, ancho_ascii=100):
     imagen_gris = imagen.convert("L")
 
     # Obtener los caracteres ASCII según la intensidad de cada píxel
-    caracteres_ascii = ["@", "#", "S", "%", "?", "*", "+", ";", ":", ",", "."]
+    caracteres_ascii = ["@", "#", "S", "%", "?", "*", "+", ";", ":", ",", ""]
     pixeles = imagen_gris.getdata()
     caracteres = [caracteres_ascii[pixel // 25] for pixel in pixeles]
     caracteres = ''.join(caracteres)
@@ -94,6 +123,7 @@ def convertir_a_ascii(imagen_path, ancho_ascii=100):
 #--------------------------------------------------------------------------
 
 def dividir_en_fotogramas(video_path, carpeta_destino):
+    global progress
     # Abrir el video
     video = cv2.VideoCapture(video_path)
 
@@ -112,6 +142,8 @@ def dividir_en_fotogramas(video_path, carpeta_destino):
         os.makedirs(carpeta_destino)
 
     # Leer y guardar cada fotograma
+    p = "Generating video ◻"
+    progressbar.configure(text = p, text_color="#b48ead")
     with alive_bar(total_frames) as bar:
         for frame_numero in range(total_frames):
             ret, frame = video.read()
@@ -132,7 +164,18 @@ def dividir_en_fotogramas(video_path, carpeta_destino):
             #print(f"fotograma {frame_numero:04d} ASCII convertido")
             
             crear_imagen_desde_txt(f"ASCII/ascii_art_{frame_numero:04d}.txt", f"fotogramasASCII/img{frame_numero:04d}.png")
+            
+            if p == "Generating video ◻":
+                p = "Generating video ◻◻"
+            elif p == "Generating video ◻◻":
+                p = "Generating video ◻◻◻"
+            else:
+                p="Generating video ◻"
+                
+            progressbar.configure(text = p, text_color="#b48ead")
+            
             bar()
+          
     # Cerrar el video
     video.release()
 
@@ -167,11 +210,21 @@ def generar_video(desde_carpeta, formato_imagen, fps, nombre_video):
 
     # Crear el objeto VideoWriter
     video = cv2.VideoWriter(nombre_video, formato_video, fps, (width, height))
-
+    p = "Saving video ◻"
+    progressbar.configure(text = p, text_color="#b48ead")
     for imagen in imagenes:
         img_path = os.path.join(desde_carpeta, imagen)
         frame = cv2.imread(img_path)
-
+        
+        if p == "Saving video ◻":
+                p = "Saving video ◻◻"
+        elif p == "Saving video ◻◻":
+                p = "Saving video ◻◻◻"
+        else:
+                p="Saving video ◻"
+                
+        progressbar.configure(text = p)
+        
         # Verificar si el fotograma se cargó correctamente
         if frame is not None:
             # Agregar el fotograma al video
@@ -181,7 +234,7 @@ def generar_video(desde_carpeta, formato_imagen, fps, nombre_video):
 
     # Cerrar el objeto VideoWriter
     video.release()
-
+    progressbar.configure(text = "Video created :)", text_color="#a3be8c")
     #print(f"Video '{nombre_video}' generado con éxito.")
 
 #--------------------------------------------------------------------------
@@ -195,7 +248,6 @@ def crear_video():
         global carpeta_destino_video
         global video_path 
         if reprocess == "off":
-            print("AAAA")
             borrarContenido()
            
             carpeta_destino = "fotogramas"
@@ -207,46 +259,64 @@ def crear_video():
         nombre_video = f"{carpeta_destino_video}/video_generado.mp4"
         generar_video(carpeta_imagenes, formato_imagen, fps, nombre_video)
     except:
-        print("error")
+        print("Error")
 
 
 
 def init():
       try:
             #print("Starting in ",timeSleep," seconds")
-            #thread1 = threading.Thread(target=crear_video)
-            #thread1.start()
+            thread1 = threading.Thread(target=crear_video)
+            thread1.start()
             print("Started")
       except:
             print("Error")
             
 
 #Tkinter
-customtkinter.set_appearance_mode("System")  # Modes: system (default), light, dark
-customtkinter.set_default_color_theme("blue")  # Themes: blue (default), dark-blue, green
-
+customtkinter.set_appearance_mode("dark")  # Modes: system (default),light , dark
+customtkinter.set_default_color_theme("theme.json")
 app = customtkinter.CTk()  # create CTk window like you do with the Tk window
-app.geometry("800x400")
+app.geometry("500x400")
+app.configure(bg="#red")
 app.resizable(width = False, height = False)
 app.title("ASCIIVIDEO")
 
 # Use CTkButton instead of tkinter Button
-buttonExport = customtkinter.CTkButton(master=app, text="Export", command=crear_video)
+buttonExport = customtkinter.CTkButton(master=app, text="Export",text_color="black", command=init,  font=('System', 16, "bold"), corner_radius=0)
 buttonExport.place(x=10, y=360)
 
-buttonSelectVideo = customtkinter.CTkButton(master=app, text="Load video", command=selectVideo)
+
+buttonSelectVideo = customtkinter.CTkButton(master=app, text="Load video",text_color="black", command=selectVideo,  font=('System', 16, "bold"),corner_radius=0)
 buttonSelectVideo.place(x=10, y=280)
-label = customtkinter.CTkLabel(app, text="Select video", fg_color="transparent", text_color="red")
+label = customtkinter.CTkLabel(app, text="Select video", fg_color="transparent", text_color="#bf616a",  font=('System', 16, "bold"))
 label.place(x = 170, y=280)
 
-buttonSelectFolder = customtkinter.CTkButton(master=app, text="Select folder", command=selectFolder)
+buttonSelectFolder = customtkinter.CTkButton(master=app, text="Select folder",text_color="black", command=selectFolder,  font=('System', 16, "bold"), corner_radius=0)
 buttonSelectFolder.place(x=10, y=320)
-label2 = customtkinter.CTkLabel(app, text="Select folder", fg_color="transparent",text_color="red")
+label2 = customtkinter.CTkLabel(app, text="Select folder", fg_color="transparent",text_color="#bf616a",  font=('System', 16, "bold"))
 label2.place(x=170, y=320)
 
+labelTitulo1 =  customtkinter.CTkLabel(app, text="""
+        _      ___   ___ ___ ___   __      ____  ___   ___  ___    
+      /_\  /  __|/  __|_  _|_  _|  \   \  /  /_  _|      \|  __/   _  \  
+    /  _  \\__  \   (__  |  |  |  |       \  V  /  |  |  |  |)   |  _|    (_)  |
+  /_/  \_\___/\___|___|___|      \_/  |___|___/  |___\___/  
+                                                                                                      
+""", fg_color="transparent",text_color="#bf616a",justify="left",corner_radius=0)
+labelTitulo1.place(x=10, y=10)
 
 previous_video_reprocess_check_var = customtkinter.StringVar(value="on")
-previous_video_reprocess_checkbox = customtkinter.CTkCheckBox(app, text="reprocess previous video", 
+previous_video_reprocess_checkbox = customtkinter.CTkCheckBox(app, text="reprocess previous video",text_color="white", font=('System', 16, "bold"),corner_radius=0,
                                      variable=previous_video_reprocess_check_var, onvalue="on", offvalue="off")
-previous_video_reprocess_checkbox.place(x=300, y=320)
+previous_video_reprocess_checkbox.place(x=10, y=160)
+
+buttonFontColor = customtkinter.CTkButton(master=app, text="Font color", text_color="black", command=ask_font_color, font=('System', 16, "bold"),corner_radius=0)
+buttonFontColor.place(x=10, y=240)
+
+buttonBackgroundColor = customtkinter.CTkButton(master=app, text="Background color", text_color="black", font=('System', 16, "bold"), command=ask_background_color,  corner_radius=0)
+buttonBackgroundColor.place(x=10, y=200)
+
+progressbar = customtkinter.CTkLabel(app,text=" ", fg_color="transparent",text_color="#b48ead",  font=('System', 16, "bold"))
+progressbar.place(x=350, y=43)
 app.mainloop()
