@@ -1,6 +1,6 @@
 import cv2
 from PIL import Image as img, ImageDraw, ImageFont
-import os, glob
+import os
 from alive_progress import alive_bar 
 import threading
 import customtkinter
@@ -271,7 +271,7 @@ def crear_video():
 
 
 
-def app():
+def ini():
       try:
             estructuraContenido()
             #print("Starting in ",timeSleep," seconds")
@@ -291,7 +291,7 @@ app.configure(bg="#red")
 app.resizable(width = False, height = False)
 app.title("ASCIIVIDEO")
 
-buttonExport = customtkinter.CTkButton(master=app, text="Export",text_color="black", command=app,  font=('System', 16, "bold"), corner_radius=0)
+buttonExport = customtkinter.CTkButton(master=app, text="Export",text_color="black", command=ini,  font=('System', 16, "bold"), corner_radius=0)
 buttonExport.place(x=10, y=360)
 
 buttonSelectVideo = customtkinter.CTkButton(master=app, text="Load video",text_color="black", command=selectVideo,  font=('System', 16, "bold"),corner_radius=0)
