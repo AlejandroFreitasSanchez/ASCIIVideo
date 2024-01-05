@@ -12,15 +12,19 @@ from CTkColorPicker import *
 text = """
     _   ___  ___ ___ ___  __   _____ ___  ___ ___  
    /_\ / __|/ __|_ _|_ _| \ \ / /_ _|   \| __/ _ \ 
-  / _ \\__ \ (__ | | | |   \ V / | || |) | _| (_) |
+  / _ \\__ \ (__ | | | |    \ V / | || |) | _| (_) |
  /_/ \_\___/\___|___|___|   \_/ |___|___/|___\___/ 
                                                    
 """                                                                                      
 print(text)
+
+#Variables
 carpeta_destino_video = ""
 video_path = ""
 fontColor = "Black"
 backgroundColor = "White"
+
+#-------------------------------------------------------------------------- 
 
 def ask_font_color():
     global fontColor
@@ -28,14 +32,18 @@ def ask_font_color():
     fontColor = pick_color.get() # get the color string
     if fontColor != None:
         buttonFontColor.configure(fg_color=fontColor)
-    
+
+#-------------------------------------------------------------------------- 
+  
 def ask_background_color():
     global backgroundColor
     pick_color = AskColor() # open the color picker
     backgroundColor = pick_color.get() # get the color string
     if backgroundColor != None:
         buttonBackgroundColor.configure(fg_color=backgroundColor)    
-        
+
+#-------------------------------------------------------------------------- 
+     
 def estructuraContenido():
     if not os.path.exists("fotogramas"):
         os.makedirs("fotogramas")
@@ -43,7 +51,9 @@ def estructuraContenido():
         os.makedirs("ASCII")
     if not os.path.exists("fotogramasASCII"):
         os.makedirs("fotogramasASCII")
-        
+
+#-------------------------------------------------------------------------- 
+     
 def borrarContenido():
     #borra el contenido de las carpetas fotogramas y ascii
     dir = 'fotogramas'
@@ -71,62 +81,88 @@ def selectFolder():
     
 #--------------------------------------------------------------------------
 
-def crear_imagen_desde_txt(txt_path, imageName):
+def crear_imagen_desde_txt(txt_folder):
     
+    txts = os.listdir(txt_folder)
     
-    with open(txt_path, "r") as archivo_txt:
-        lineas = archivo_txt.readlines()
-
+    with open("ASCII/ascii_art_0001.txt", "r") as primer_archivo_txt:
+            lineas_1 = primer_archivo_txt.readlines()
+          
     # Obtener el ancho y alto de la imagen desde las dimensiones del texto
-    ancho = len(lineas[0].strip())
-    alto = len(lineas)
-
+    ancho = len(lineas_1[0].strip())
+    alto = len(lineas_1)
     # Tamaño de cada carácter en la imagen
-    tamano_caracter = 10
+    tamano_caracter = 10   
+    i = 0   
+    with alive_bar(len(txts)) as bar:  
+        for txt in txts:
+            i = i + 1
+            txt_path = f"ASCII/{txt}"
+            
+            with open(txt_path, "r") as archivo_txt:
+                lineas = archivo_txt.readlines()
 
-    # Crear una nueva imagen RGB
-    nueva_imagen = img.new("RGB", (ancho * tamano_caracter, alto * tamano_caracter), backgroundColor)
-    draw = ImageDraw.Draw(nueva_imagen)
+            # Crear una nueva imagen RGB
+            nueva_imagen = img.new("RGB", (ancho * tamano_caracter, alto * tamano_caracter), backgroundColor)
+            draw = ImageDraw.Draw(nueva_imagen)
 
-    # Utilizar una fuente mono-espaciada para que los caracteres se alineen correctamente
-    fuente = ImageFont.load_default()
+            # Utilizar una fuente mono-espaciada para que los caracteres se alineen correctamente
+            fuente = ImageFont.load_default()
 
-    # Dibujar los caracteres en la imagen
-    for y, linea in enumerate(lineas):
-        for x, caracter in enumerate(linea.strip()):
-            posicion = (x * tamano_caracter, y * tamano_caracter)
-            draw.text(posicion, caracter, font=fuente, fill=fontColor)
+            # Dibujar los caracteres en la imagen
+            for y, linea in enumerate(lineas):
+                for x, caracter in enumerate(linea.strip()):
+                    posicion = (x * tamano_caracter, y * tamano_caracter)
+                    draw.text(posicion, caracter, font=fuente, fill=fontColor)
 
-    # Guardar la imagen
-    nueva_imagen.save(imageName)
-
-    #print(f"Imagen generada y guardada como {imageName}")
+            # Guardar la imagen
+            nueva_imagen.save(f"fotogramasASCII/fotograma_{i:04d}.png")
+            bar()
 
 #--------------------------------------------------------------------------   
     
-def convertir_a_ascii(imagen_path, ancho_ascii=100):
+def convertir_a_ascii(folder_path, ancho_ascii=100):
     # Cargar la imagen
-    imagen = img.open(imagen_path)
+    
+    #extraer el total de imagenes de folder_path
+    images = os.listdir(folder_path)
+    
+    first_imagen = img.open("fotogramas/frame_0000.png")
+    ratio = ancho_ascii / float(first_imagen.size[0])
+    alto_ascii = int(float(first_imagen.size[1]) * float(ratio))
+    
+    #Por cada imagen crear un txt con el arte ASCII
+    i = 0
+    with alive_bar(len(images)) as bar:
+        for image in images:
+            i = i + 1
+            image.index
+            image_path = f"fotogramas/{image}"
+            #print (image_path)
+            imagen = img.open(image_path)
+            # Redimensionar la imagen si es necesario
+            imagen = imagen.resize((ancho_ascii, alto_ascii))
 
-    # Redimensionar la imagen si es necesario
-    ratio = ancho_ascii / float(imagen.size[0])
-    alto_ascii = int(float(imagen.size[1]) * float(ratio))
-    imagen = imagen.resize((ancho_ascii, alto_ascii))
+            # Convertir a escala de grises
+            imagen_gris = imagen.convert("L")
 
-    # Convertir a escala de grises
-    imagen_gris = imagen.convert("L")
+            # Obtener los caracteres ASCII según la intensidad de cada píxel
+            caracteres_ascii = ["@", "#", "S", "%", "?", "*", "+", ";", ";", ",", ""]
+            pixeles = imagen_gris.getdata()
+            caracteres = [caracteres_ascii[pixel // 25] for pixel in pixeles]
+            caracteres = ''.join(caracteres)
 
-    # Obtener los caracteres ASCII según la intensidad de cada píxel
-    caracteres_ascii = ["@", "#", "S", "%", "?", "*", "+", ";", ":", ",", ""]
-    pixeles = imagen_gris.getdata()
-    caracteres = [caracteres_ascii[pixel // 25] for pixel in pixeles]
-    caracteres = ''.join(caracteres)
-
-    # Dividir los caracteres en líneas
-    caracteres_divididos = [caracteres[i:i+ancho_ascii] for i in range(0, len(caracteres), ancho_ascii)]
-    ascii_art = "\n".join(caracteres_divididos)
-
-    return ascii_art
+            # Dividir los caracteres en líneas
+            caracteres_divididos = [caracteres[i:i+ancho_ascii] for i in range(0, len(caracteres), ancho_ascii)]
+            
+            #ASCII art
+            ascii_art = "\n".join(caracteres_divididos)
+            
+            # Guardar o imprimir el arte ASCII
+            with open(f"ASCII/ascii_art_{i:04d}.txt", "w") as archivo:
+                    archivo.write(ascii_art)
+            bar()
+        
 
 #--------------------------------------------------------------------------
 
@@ -162,32 +198,20 @@ def dividir_en_fotogramas(video_path, carpeta_destino):
             # Guardar el fotograma en la carpeta de destino
             nombre_fotograma = f"{carpeta_destino}/frame_{frame_numero:04d}.png"
             cv2.imwrite(nombre_fotograma, frame)
-
-            ascii_art = convertir_a_ascii(f"{carpeta_destino}/frame_{frame_numero:04d}.png")
-
-            # Guardar o imprimir el arte ASCII
-            with open(f"ASCII/ascii_art_{frame_numero:04d}.txt", "w") as archivo:
-                archivo.write(ascii_art)
-
-            #print(f"fotograma {frame_numero:04d} ASCII convertido")
-            
-            crear_imagen_desde_txt(f"ASCII/ascii_art_{frame_numero:04d}.txt", f"fotogramasASCII/img{frame_numero:04d}.png")
-            
+               
             if p == "Generating video ◻":
-                p = "Generating video ◻◻"
-            elif p == "Generating video ◻◻":
-                p = "Generating video ◻◻◻"
+               p = "Generating video ◻ ◻"
+            elif p == "Generating video ◻ ◻":
+                p = "Generating video ◻ ◻ ◻"
             else:
                 p="Generating video ◻"
                 
             progressbar.configure(text = p, text_color="#b48ead")
-            
+
             bar()
           
     # Cerrar el video
     video.release()
-
-    #print(f"Se han guardado {total_frames} fotogramas.")
 
 #--------------------------------------------------------------------------
 
@@ -211,7 +235,7 @@ def generar_video(desde_carpeta, formato_imagen, fps, nombre_video):
         print(f"Error al cargar la imagen: {img_path}")
         return
 
-    height, width, _ = img.shape
+    height, width= img.shape
 
     # Especificar el formato del video (en este caso, XVID)
     formato_video = cv2.VideoWriter_fourcc(*'mp4v')
@@ -225,9 +249,9 @@ def generar_video(desde_carpeta, formato_imagen, fps, nombre_video):
         frame = cv2.imread(img_path)
         
         if p == "Saving video ◻":
-                p = "Saving video ◻◻"
-        elif p == "Saving video ◻◻":
-                p = "Saving video ◻◻◻"
+                p = "Saving video ◻ ◻"
+        elif p == "Saving video ◻ ◻":
+                p = "Saving video ◻ ◻ ◻"
         else:
                 p="Saving video ◻"
                 
@@ -258,9 +282,13 @@ def crear_video():
         if reprocess == "off":
             borrarContenido()
            
-            carpeta_destino = "fotogramas"
-            dividir_en_fotogramas(video_path, carpeta_destino)
-          
+            carpeta_fotogramas = "fotogramas"
+            dividir_en_fotogramas(video_path, carpeta_fotogramas)
+
+            convertir_a_ascii(carpeta_fotogramas)
+            carpeta_txt = "ASCII"
+            crear_imagen_desde_txt(carpeta_txt)
+                
         carpeta_imagenes = "fotogramasASCII/"
         formato_imagen = ".png"  #Formato imagenes
         fps = 30  # Fotogramas por segundo
@@ -286,7 +314,7 @@ def ini():
 customtkinter.set_appearance_mode("dark")  # Modes: system (default),light , dark
 customtkinter.set_default_color_theme("theme.json")
 app = customtkinter.CTk()  # create CTk window like you do with the Tk window
-app.geometry("500x400")
+app.geometry("550x400")
 app.configure(bg="#red")
 app.resizable(width = False, height = False)
 app.title("ASCIIVIDEO")
@@ -305,10 +333,10 @@ label2 = customtkinter.CTkLabel(app, text="Select folder", fg_color="transparent
 label2.place(x=170, y=320)
 
 labelTitulo1 =  customtkinter.CTkLabel(app, text="""
-        _      ___   ___ ___ ___   __      ____  ___   ___  ___    
-      /_\  /  __|/  __|_  _|_  _|  \   \  /  /_  _|      \|  __/   _  \  
-    /  _  \\__  \   (__  |  |  |  |       \  V  /  |  |  |  |)   |  _|    (_)  |
-  /_/  \_\___/\___|___|___|      \_/  |___|___/  |___\___/  
+     _     ___   ___ ___ ___  __    _ ___ ___  ___ ___    
+    /_\   /  __|/  __|_  _|_  _|  \   \  /  /_  _|      \|  __/   _  \  
+   /  _   \\__  \   (__  |  |  |  |       \  V  /  |  |  |  |)  |  _|    (_) |
+  /_/  \_\___/\___|___|___|      \_/  |___|___/ |___\___/  
                                                                                                       
 """, fg_color="transparent",text_color="#bf616a",justify="left",corner_radius=0)
 labelTitulo1.place(x=10, y=10)
